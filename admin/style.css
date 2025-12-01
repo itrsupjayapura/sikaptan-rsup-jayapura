@@ -1,0 +1,865 @@
+/* ===================== GLOBAL RESET ===================== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Poppins", sans-serif;
+}
+
+body {
+    background: #f6f9f8;
+    color: #2f3e46;
+    display: flex;
+    min-height: 100vh;
+}
+
+
+
+
+
+
+
+
+
+
+/* ===================== SIDEBAR ===================== */
+.sidebar {
+    width: 260px;
+    background: linear-gradient(180deg, #006e5c 0%, #009879 100%);
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: all 0.3s ease;
+    position: fixed;
+    height: 100%;
+}
+
+.sidebar.active {
+    transform: translateX(-100%);
+}
+
+.sidebar-header {
+    text-align: center;
+    padding: 25px 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.logo-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.logo-kemenkes {
+    width: 65px;
+    height: 65px;
+    margin-bottom: 10px;
+    object-fit: contain;
+}
+
+.logo-text h2 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #fff;
+    letter-spacing: 1px;
+}
+
+.logo-text p {
+    font-size: 12px;
+    color: #e0f5ef;
+}
+
+/* ===================== MENU ===================== */
+.sidebar-menu {
+    list-style: none;
+    margin-top: 0;
+    /* Hapus margin negatif biar tidak naik ke atas */
+    padding: 15px 0;
+}
+
+
+.sidebar-menu li {
+    margin: 10px 0;
+}
+
+.sidebar-menu a {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #e6fff9;
+    padding: 12px 25px;
+    text-decoration: none;
+    transition: 0.3s ease;
+    font-weight: 500;
+
+}
+
+.sidebar-menu a:hover,
+.sidebar-menu a.active {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+    border-left: 4px solid #f4fffb;
+
+}
+
+/* ===================== LOGOUT SECTION ===================== */
+.logout-section {
+    padding: 20px 25px;
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.logout {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #fdd;
+    text-decoration: none;
+    font-weight: 500;
+    transition: 0.3s ease;
+}
+
+.logout:hover {
+    color: #fff;
+    transform: translateX(5px);
+}
+
+/* ===================== MAIN CONTENT ===================== */
+.content {
+    flex: 1;
+    margin-left: 260px;
+    transition: all 0.3s ease;
+}
+
+.sidebar.active+.content {
+    margin-left: 0;
+}
+
+
+
+
+
+
+
+
+
+
+
+/* ===================== SIDEBAR ===================== */
+.sidebar {
+    width: 260px;
+    background: linear-gradient(180deg, #006e5c 0%, #009879 100%);
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: transform 0.3s ease;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    height: 100vh;
+    /* selalu penuh layar */
+    overflow-y: auto;
+    /* scroll jika konten panjang */
+    z-index: 1000;
+}
+
+.sidebar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+}
+
+/* Saat sidebar disembunyikan (mobile mode) */
+.sidebar.active {
+    transform: translateX(-100%);
+}
+
+/* ===================== SIDEBAR HEADER ===================== */
+.sidebar-header {
+    text-align: center;
+    padding: 25px 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 40px 14px 7px;
+    /* Tambah padding atas agar logo agak turun */
+    flex-shrink: 0;
+}
+
+.logo-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    /* Pastikan konten di tengah vertikal */
+}
+
+.logo-kemenkes {
+    width: 70px;
+    /* Sedikit lebih proporsional */
+    height: 70px;
+    margin-bottom: 12px;
+    object-fit: contain;
+}
+
+.logo-text h2 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #fff;
+    letter-spacing: 1px;
+}
+
+.logo-text p {
+    font-size: 12px;
+    color: #e0f5ef;
+}
+
+/* ===================== MENU ===================== */
+.sidebar-menu {
+    list-style: none;
+    padding: 20px 0;
+    margin: 0;
+    flex-grow: 1;
+}
+
+.sidebar-menu li {
+    margin: 5px 0;
+}
+
+.sidebar-menu a {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #e6fff9;
+    padding: 12px 25px;
+    text-decoration: none;
+    transition: 0.3s ease;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.sidebar-menu a:hover,
+.sidebar-menu a.active {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+    border-left: 4px solid #f4fffb;
+}
+
+/* ===================== LOGOUT SECTION ===================== */
+.logout-section {
+    padding: 20px 25px;
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    flex-shrink: 0;
+}
+
+.logout {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #fdd;
+    text-decoration: none;
+    font-weight: 500;
+    transition: 0.3s ease;
+}
+
+.logout:hover {
+    color: #fff;
+    transform: translateX(5px);
+}
+
+/* ===================== MAIN CONTENT ===================== */
+.content {
+    margin-left: 260px;
+    transition: margin-left 0.3s ease;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: #f8f9fa;
+}
+
+/* Jika sidebar disembunyikan */
+.sidebar.active+.content {
+    margin-left: 0;
+}
+
+/* ===================== RESPONSIVE ===================== */
+@media (max-width: 992px) {
+    .sidebar {
+        transform: translateX(-100%);
+    }
+
+    .sidebar.active {
+        transform: translateX(0);
+    }
+
+    .content {
+        margin-left: 0;
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* ===================== TOPBAR ===================== */
+
+
+.topbar-left button {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: #009879;
+    cursor: pointer;
+}
+
+.greeting {
+    font-weight: 500;
+    color: #333;
+}
+
+/* ===================== MAIN CONTENT AREA ===================== */
+.main-content {
+    padding: 25px;
+}
+
+.page-wrapper {
+    background: #fff;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    min-height: calc(100vh - 120px);
+    animation: fadeIn 0.6s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ===================== RESPONSIVE ===================== */
+@media (max-width: 992px) {
+    .sidebar {
+        position: fixed;
+
+        z-index: 999;
+    }
+
+    .sidebar.active {
+        transform: translateX(0);
+    }
+
+    .content {
+        margin-left: 0;
+    }
+
+    .toggle-btn {
+        display: block;
+    }
+}
+
+@media (max-width: 576px) {
+    .logo-text h2 {
+        font-size: 16px;
+    }
+
+    .logo-kemenkes {
+        width: 50px;
+        height: 50px;
+    }
+}
+
+
+
+
+
+
+
+
+
+
+/* ===== FILTER FORM STYLING ===== */
+.filter-form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 15px;
+    background: #fff;
+    padding: 15px 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    margin-bottom: 20px;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.filter-group label {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 6px;
+    font-size: 14px;
+}
+
+.filter-select {
+    padding: 8px 10px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    background-color: #f9f9fb;
+    font-size: 14px;
+    transition: all 0.2s ease;
+    min-width: 180px;
+}
+
+.filter-select:focus {
+    outline: none;
+    border-color: #007bff;
+    background-color: #fff;
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
+}
+
+/* Tombol Filter */
+.filter-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #007bff, #0056d6);
+    color: white;
+    border: none;
+    padding: 9px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    transition: background 0.2s;
+    border-radius: 5px;
+
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #0056d6, #0044b2);
+}
+
+.btn-reset {
+    background: #f1f1f1;
+    color: #333;
+    padding: 9px 16px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    transition: background 0.2s;
+}
+
+.btn-reset:hover {
+    background: #e0e0e0;
+}
+
+
+
+
+
+
+
+/* ===== TOMBOL EXPORT STYLING ===== */
+.export-form {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
+.btn-export {
+    background: linear-gradient(135deg, #2ecc71, #27ae60);
+    color: #fff;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 10px 18px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 2px 6px rgba(46, 204, 113, 0.3);
+    transition: all 0.25s ease-in-out;
+}
+
+.btn-export:hover {
+    background: linear-gradient(135deg, #27ae60, #1e8449);
+    box-shadow: 0 4px 10px rgba(39, 174, 96, 0.4);
+    transform: translateY(-1px);
+}
+
+.btn-export:active {
+    transform: scale(0.97);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+
+
+
+
+
+
+
+
+/* === RESET RESPONSIVE === */
+* {
+    box-sizing: border-box;
+}
+
+
+/* === FORM FILTER === */
+.filter-form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 150px;
+}
+
+
+
+.filter-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-primary,
+.btn-reset,
+.btn-export {
+    background: #4a90e2;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 14px;
+    cursor: pointer;
+    font-size: 12px;
+    border-radius: 5px;
+}
+
+.btn-reset {
+    background: #ff9800;
+}
+
+.btn-export {
+    background: #43a047;
+}
+
+.btn-primary:hover {
+    background: #3f7cc2;
+}
+
+
+
+.btn-reset:hover {
+    background: #e68900;
+}
+
+.btn-export:hover {
+    background: #388e3c;
+}
+
+/* === WRAPPER UTAMA === */
+.glass {
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(8px);
+    border-radius: 12px;
+    padding: 15px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+    width: 100%;
+    overflow: hidden;
+}
+
+/* === BAGIAN GRAFIK === */
+
+/* === STAT CARD GRID === */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 15px;
+    margin-top: 25px;
+}
+
+.stat-card {
+    background: #fff;
+    padding: 15px;
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 14px rgba(0, 0, 0, 0.12);
+}
+
+/* === TABEL DATA ===
+.table-scroll {
+    overflow-x: auto;
+    width: 100%;
+}
+
+.table-scroll table {
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 1000px;
+}
+
+table th,
+table td {
+    border: 1px solid #ccc;
+    padding: 8px 10px;
+    text-align: center;
+}
+
+table th {
+    background: #2f6e4f;
+    font-weight: 600;
+}
+
+table tr:nth-child(even) {
+    background: #fafafa;
+} */
+
+/* === INFO BOX === */
+.info-box {
+    margin: 15px 0;
+    padding: 12px 16px;
+    background: #f0f6ff;
+    border-left: 4px solid #4a90e2;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #333;
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 768px) {
+    h2 {
+        font-size: 18px;
+    }
+
+    .filter-form {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .chart-top {
+        grid-template-columns: 1fr;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .table-scroll table {
+        min-width: 800px;
+    }
+}
+
+@media (max-width: 480px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .filter-buttons {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+.swal2-popup {
+    border-radius: 16px !important;
+    font-family: "Segoe UI", sans-serif;
+    padding: 1.5rem !important;
+}
+
+.swal2-title {
+    color: #006b5c !important;
+    font-weight: 600 !important;
+    font-size: 1.3rem !important;
+}
+
+.swal2-confirm {
+    background-color: #009879 !important;
+    border: none !important;
+    border-radius: 8px !important;
+    padding: 0.6rem 1.5rem !important;
+    font-weight: 500;
+}
+
+.swal2-cancel {
+    background-color: #e5e5e5 !important;
+    color: #333 !important;
+    border-radius: 8px !important;
+    padding: 0.6rem 1.3rem !important;
+    font-weight: 500;
+}
+
+.swal2-icon.swal2-warning {
+    border-color: #ffc107 !important;
+    color: #ffc107 !important;
+}
+
+.swal2-icon.swal2-success {
+    border-color: #00b894 !important;
+    color: #00b894 !important;
+}
+
+/* 🧾 Tabel kelola ruangan */
+.table-bordered th,
+.table-bordered td {
+    border-color: #c8e6c9 !important;
+}
+
+.table thead th {
+    background-color: #009879 !important;
+    color: #fff !important;
+    font-weight: 600;
+}
+
+.table-hover tbody tr:hover {
+    background-color: #f1fdf9 !important;
+    transition: 0.2s ease-in-out;
+}
+
+/* 🎨 Modal */
+.modal-content {
+    border-radius: 14px !important;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+}
+
+.modal-header {
+    background: #009879;
+    color: #fff;
+    border-top-left-radius: 14px;
+    border-top-right-radius: 14px;
+}
+
+.modal-title {
+    font-weight: 600;
+}
+
+.btn-close {
+    filter: invert(1);
+}
+
+/* 🌸 Tombol */
+.btn-success {
+    background-color: #009879 !important;
+    border: none !important;
+}
+
+.btn-warning {
+    background-color: #f9b934 !important;
+    color: #000 !important;
+    border: none !important;
+}
+
+.btn-danger {
+    background-color: #dc3545 !important;
+    border: none !important;
+}
+
+/* ✨ Aksen umum */
+h3 {
+    color: #006b5c;
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+small a {
+    text-decoration: none;
+    color: #009879;
+}
+
+small a:hover {
+    text-decoration: underline;
+}
+
+/* 🏥 Layout form ruangan */
+.form-check-label {
+    font-weight: 500;
+}
+
+.form-check-input:checked {
+    background-color: #009879 !important;
+    border-color: #009879 !important;
+}
+
+:root {
+    --main-color: #007A64;
+}
+
+/* Contoh penerapan */
+.sidebar {
+    background: var(--main-color);
+}
+
+.sidebar.gradient-light {
+    background: linear-gradient(180deg, var(--main-color), #00a37c);
+}
+
+.sidebar.gradient-dark {
+    background: linear-gradient(180deg, var(--main-color), #004d3f);
+}
+
+.sidebar.solid {
+    background: var(--main-color);
+}
+
+.btn-success,
+.btn-primary {
+    background-color: var(--main-color) !important;
+    border-color: var(--main-color) !important;
+}
+
+a.active {
+    background-color: var(--main-color);
+    color: white !important;
+}
