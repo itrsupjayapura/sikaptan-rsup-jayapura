@@ -22,9 +22,9 @@ $base_url = $protocol . $hostName . $folder;
 // ⚙️ KONFIGURASI DATABASE
 // ======================================================
 $host = "localhost";
-$user = "root";
-$pass = "";
-$db   = "apd_app";
+$user = "admin";
+$pass = "rsvp@satu23";
+$db   = "sikaptan";
 
 $conn = mysqli_connect($host, $user, $pass, $db);
 

@@ -482,13 +482,14 @@ foreach ($rows as $row):
 endforeach;
 
 
-$total_semua=$total_ya+$total_tidak+$total_tidak_dinilai;
+//$total_semua=$total_ya+$total_tidak+$total_tidak_dinilai;
+$total_semua = $total_ya+$total_tidak;
 if($total_semua>0):
 $total_persen=round(($total_num/$total_den)*100,2);
 $persen_ya=round(($total_ya/$total_semua)*100,1);
 $persen_tidak=round(($total_tidak/$total_semua)*100,1);
-$persen_tdk=round(($total_tidak_dinilai/$total_semua)*100,1);
-
+//$persen_tdk=round(($total_tidak_dinilai/$total_semua)*100,1);
+$persen_tdk=0;
 
 ?>
 
@@ -637,16 +638,16 @@ const warnaDen = '#9E9E9E';
 const totalYa = Object.values(statData).reduce((a,b)=>a+b['Ya'],0);
 const totalTidak = Object.values(statData).reduce((a,b)=>a+b['Tidak'],0);
 const totalTdk = Object.values(statData).reduce((a,b)=>a+b['Tidak Dinilai'],0);
-const totalSemua = totalYa + totalTidak + totalTdk;
-
+//const totalSemua = totalYa + totalTidak + totalTdk;
+const totalSemua = totalYa + totalTidak;
 // === Pie Chart ===
 new Chart(document.getElementById('chartPie'), {
     type: 'pie',
     data: {
-        labels: ['Ya', 'Tidak', 'Tidak Dinilai'],
+        labels: ['Ya', 'Tidak'],
         datasets: [{
-            data: [totalYa, totalTidak, totalTdk],
-            backgroundColor: [warnaYa, warnaTidak, warnaTdk],
+            data: [totalYa, totalTidak],
+            backgroundColor: [warnaYa, warnaTidak],
             borderColor: '#fff',
             borderWidth: 2
         }]
@@ -690,8 +691,7 @@ new Chart(ctxBar, {
         labels: labels,
         datasets: [
             { label: 'Ya', data: labels.map(k=>statData[k]['Ya']), backgroundColor: warnaYa },
-            { label: 'Tidak', data: labels.map(k=>statData[k]['Tidak']), backgroundColor: warnaTidak },
-            { label: 'Tidak Dinilai', data: labels.map(k=>statData[k]['Tidak Dinilai']), backgroundColor: warnaTdk },
+            { label: 'Tidak', data: labels.map(k=>statData[k]['Tidak']), backgroundColor: warnaTidak }
         ]
     },
     options: {
