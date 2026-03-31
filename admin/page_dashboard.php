@@ -76,7 +76,17 @@ foreach ($rows as $row) {
       $total_ya++;
     } elseif ($val == 'tidak') {
       $stat[$k]['Tidak']++;
-      $total_tidak++;
+
+      
+/* ================= SINKRON TOTAL DENGAN CHART ================= */
+// reset ulang biar sama dengan chart
+$total_ya = 0;
+$total_tidak = 0;
+
+foreach ($stat as $item) {
+    $total_ya += $item['Ya'];
+    $total_tidak += $item['Tidak'];
+}
     } else {
       $stat[$k]['Tidak Dinilai']++;
       $total_tidak_dinilai++;
@@ -84,15 +94,23 @@ foreach ($rows as $row) {
   }
 }
 
-/* ================= HITUNG PERSENTASE ================= */
-$total_semua = $total_ya + $total_tidak + $total_tidak_dinilai;
-$persen_ya = $total_semua > 0
-  ? round(($total_ya / $total_semua) * 100, 1)
+/* ================= HITUNG PERSENTASE (FIX SINKRON CHART) ================= */
+
+// 🔹 hanya gunakan data valid (Ya + Tidak)
+$total_valid = $total_ya + $total_tidak;
+
+// 🔹 persen Ya (sama seperti chart)
+$persen_ya = $total_valid > 0
+  ? round(($total_ya / $total_valid) * 100, 1)
   : 0;
 
-$persen_tidak = $total_semua > 0
-  ? round(($total_tidak / $total_semua) * 100, 1)
+// 🔹 persen Tidak (sama seperti chart)
+$persen_tidak = $total_valid > 0
+  ? round(($total_tidak / $total_valid) * 100, 1)
   : 0;
+
+// 🔹 tetap hitung Tidak Dinilai (opsional, tidak dipakai di chart utama)
+$total_semua = $total_ya + $total_tidak + $total_tidak_dinilai;
 
 $persen_tdk = $total_semua > 0
   ? round(($total_tidak_dinilai / $total_semua) * 100, 1)
@@ -134,14 +152,8 @@ $total_den_cuci = $cuci['total_den'] ?? 0;
 $rata_cuci = $total_den_cuci > 0
   ? round(($total_num_cuci / $total_den_cuci) * 100, 2)
   : 0;
-$total_tidak = $total_den_cuci - $total_num_cuci;
-$total_tidak_cuci = $total_den_cuci - $total_num_cuci;
-$total_semua_cuci = $total_num_cuci + $total_tidak_cuci;
-$persen_ya_cuci = $total_semua_cuci > 0 ? round(($total_num_cuci / $total_semua_cuci) * 100, 1) : 0;
-$persen_tidak_cuci = $total_semua_cuci > 0 ? round(($total_tidak_cuci / $total_semua_cuci) * 100, 1) : 0;
 
-
-/* ================= STATISTIK KOMPONEN CUCI TANGAN ================= */
+/* ================= STAT CUCI TANGAN ================= */
 
 $fields_cuci = [
   "sebelum_kontak_dengan_pasien" => "Sebelum Kontak Pasien",
@@ -157,55 +169,70 @@ foreach ($fields_cuci as $k => $v) {
   $stat_cuci[$k] = ['Ya' => 0, 'Tidak' => 0, 'Tidak Dinilai' => 0];
 }
 
+/* ================= AMBIL DATA ================= */
+
 $query_cuci_detail = mysqli_query($conn, "SELECT * FROM observasi_cuci_tangan");
+
+$total_num_cuci = 0;
+$total_den_cuci = 0;
 
 while ($row = mysqli_fetch_assoc($query_cuci_detail)) {
 
+  // 🔹 ambil numerator & denominator langsung dari loop
+  $total_num_cuci += $row['numerator'] ?? 0;
+  $total_den_cuci += $row['denumerator'] ?? 0;
+
   foreach ($fields_cuci as $k => $v) {
 
-    $val = strtolower(trim($row[$k] ?? 'tidak dinilai'));
+    $val = strtolower(trim($row[$k] ?? ''));
 
-    if ($val == 'ya') $stat_cuci[$k]['Ya']++;
-    elseif ($val == 'tidak') $stat_cuci[$k]['Tidak']++;
-    else $stat_cuci[$k]['Tidak Dinilai']++;
+    if ($val === 'ya') {
+      $stat_cuci[$k]['Ya']++;
+    } elseif ($val === 'tidak') {
+      $stat_cuci[$k]['Tidak']++;
+    } else {
+      $stat_cuci[$k]['Tidak Dinilai']++;
+    }
   }
 }
 
+/* ================= TOTAL CUCI (FINAL SINKRON) ================= */
 
-/* ================= PERSENTASE CUCI TANGAN ================= */
+$total_ya_cuci = $total_num_cuci;
+$total_tidak_cuci = $total_den_cuci - $total_num_cuci;
 
-$total_semua_cuci = $total_num_cuci + $total_tidak;
+/* ================= PERSENTASE (SAMA DENGAN CHART) ================= */
 
-$persen_patuh_cuci = $total_semua_cuci > 0
-  ? round(($total_num_cuci / $total_semua_cuci) * 100, 1)
+$total_valid_cuci = $total_ya_cuci + $total_tidak_cuci;
+
+$persen_ya_cuci = $total_valid_cuci > 0
+  ? round(($total_ya_cuci / $total_valid_cuci) * 100, 1)
   : 0;
 
-$persen_tidak_cuci = $total_semua_cuci > 0
-  ? round(($total_tidak / $total_semua_cuci) * 100, 1)
+$persen_tidak_cuci = $total_valid_cuci > 0
+  ? round(($total_tidak_cuci / $total_valid_cuci) * 100, 1)
   : 0;
 
+/* ================= RATA-RATA ================= */
 
+$rata_cuci = ($total_den_cuci > 0)
+  ? round(($total_num_cuci / $total_den_cuci) * 100, 2)
+  : 0;
 
+/* ================= STATUS ================= */
 
-
-/* ================= TAMBAHAN PERHITUNGAN ================= */
-$persen_tdk = $total_semua > 0 ? round(($total_tidak_dinilai / $total_semua) * 100, 1) : 0;
-
-/* STATUS KEPATUHAN */
 if ($rata_cuci >= 85) {
-
   $status_kepatuhan_cuci = "Tercapai";
   $warna_status_cuci = "bg-green";
   $icon_status_cuci = "fa-check-circle";
 } else {
-
   $status_kepatuhan_cuci = "Tidak Tercapai";
   $warna_status_cuci = "bg-red";
   $icon_status_cuci = "fa-times-circle";
 }
 
-
 /* ================= HANDWASH vs HANDRUB ================= */
+
 $handwash = 0;
 $handrub = 0;
 
@@ -218,9 +245,9 @@ while ($j = mysqli_fetch_assoc($jenis_query)) {
 
   $jenis = strtolower(trim($j['cuci_tangan_menggunakan']));
 
-  if ($jenis == 'handwash') {
+  if ($jenis === 'handwash') {
     $handwash++;
-  } elseif ($jenis == 'handrub') {
+  } elseif ($jenis === 'handrub') {
     $handrub++;
   }
 }
@@ -1200,6 +1227,14 @@ box-shadow:0 25px 45px rgba(0,0,0,.18);
     </button>
   </div>
 
+
+
+
+
+
+
+
+  
   <!-- ================= APD TAB ================= -->
   <div id="apd" class="tabcontent">
     <h2>
@@ -1329,6 +1364,30 @@ box-shadow:0 25px 45px rgba(0,0,0,.18);
       </div>
     </div>
   </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1642,8 +1701,8 @@ ORDER BY nama ASC
     const totalDen = <?= $total_den_cuci ?>;
     const statCuci = <?= json_encode($stat_cuci) ?>;
     const labelsCuci = Object.keys(statCuci);
-    const totalYaCuci = Object.values(statCuci).reduce((a, b) => a + b['Ya'], 0);
-    const totalTidakCuci = Object.values(statCuci).reduce((a, b) => a + b['Tidak'], 0);
+    const totalYaCuci = <?= $total_ya_cuci ?>;
+    const totalTidakCuci = <?= $total_tidak_cuci ?>;
     const totalTdkCuci = Object.values(statCuci).reduce((a, b) => a + b['Tidak Dinilai'], 0);
 
     /* ================= PIE OBSERVASI ================= */

@@ -59,7 +59,7 @@ if ($filter_ruangan != 'semua') {
   $where .= " AND do.ruangan='$filter_ruangan'";
 }
 
-$show_data = ($filter_tahun != '' && $filter_bulan != '' && $filter_ruangan != '');
+$show_data = true;
 
 // ============================================================
 // 🔹 Query Utama — Gabungkan data_observasi_cuci_tangan & observasi_cuci_tangan
@@ -256,6 +256,7 @@ if ($show_data) {
   .main-content {
     padding: 25px;
   }
+
   .page-wrapper {
     background: #fff;
     padding: 25px;
@@ -360,10 +361,12 @@ if ($show_data) {
   .table-container::-webkit-scrollbar {
     height: 8px;
   }
+
   .table-container::-webkit-scrollbar-thumb {
     background: #009879;
     border-radius: 10px;
   }
+
   .table-container::-webkit-scrollbar-track {
     background: #e6f4f1;
   }
@@ -532,10 +535,6 @@ else:
         // Jika ada nilai aneh, masukkan ke "Tidak Dinilai"
         $stat[$k]['Tidak Dinilai']++;
       }
-
-      if ($val == 'ya') $total_ya++;
-      elseif ($val == 'tidak') $total_tidak++;
-      else $total_tidak_dinilai++;
     }
 
     // 🧩 Catat nama rekan dilaporkan
@@ -547,11 +546,24 @@ else:
     if (!empty($row['ruangan'])) $ruangan_terobservasi[$row['ruangan']] = true;
   endforeach;
 
-  $total_semua = $total_ya + $total_tidak + $total_tidak_dinilai;
+  /* ================= FIX TOTAL SINKRON DENGAN CHART ================= */
+
+  $total_ya = 0;
+  $total_tidak = 0;
+  $total_tidak_dinilai = 0;
+
+  foreach ($stat as $item) {
+    $total_ya += $item['Ya'];
+    $total_tidak += $item['Tidak'];
+    $total_tidak_dinilai += $item['Tidak Dinilai'];
+  }
+
+  $total_valid = $total_ya + $total_tidak;
+
+  $persen_ya = ($total_valid > 0) ? round(($total_ya / $total_valid) * 100, 1) : 0;
+  $persen_tidak = ($total_valid > 0) ? round(($total_tidak / $total_valid) * 100, 1) : 0;
   $total_persen = ($total_den > 0) ? round(($total_num / $total_den) * 100, 2) : 0;
-  $persen_ya = ($total_semua > 0) ? round(($total_ya / $total_semua) * 100, 1) : 0;
-  $persen_tidak = ($total_semua > 0) ? round(($total_tidak / $total_semua) * 100, 1) : 0;
-  $persen_tdk = ($total_semua > 0) ? round(($total_tidak_dinilai / $total_semua) * 100, 1) : 0;
+  
 
   // $status_kepatuhan = ($total_persen >= 100) ? 'Tercapai' : 'Tidak Tercapai';
   // $warna_status = ($status_kepatuhan == 'Tercapai') ? 'bg-green' : 'bg-red';
@@ -718,8 +730,8 @@ else:
   <script>
     const statData = <?= json_encode($stat) ?>;
     const labels = Object.keys(statData);
-    const totalYa = Object.values(statData).reduce((a, b) => a + b['Ya'], 0);
-    const totalTidak = Object.values(statData).reduce((a, b) => a + b['Tidak'], 0);
+    const totalYa = <?= $total_ya ?>;
+const totalTidak = <?= $total_tidak ?>;
     const totalTdk = Object.values(statData).reduce((a, b) => a + b['Tidak Dinilai'], 0);
     const totalSemua = totalYa + totalTidak + totalTdk;
 
@@ -743,6 +755,16 @@ else:
           title: {
             display: true,
             text: 'Distribusi Jawaban Observasi Cuci Tangan'
+          },
+          tooltip: {
+            callbacks: {
+              label: function(ctx) {
+                const total = totalYa + totalTidak;
+                const val = ctx.parsed;
+                const persen = total > 0 ? ((val / total) * 100).toFixed(1) : 0;
+                return `${ctx.label}: ${val} (${persen}%)`;
+              }
+            }
           },
           datalabels: {
             color: '#fff',

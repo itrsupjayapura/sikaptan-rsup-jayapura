@@ -9,13 +9,16 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['role'] != 'admin') {
 // ============================================================
 // 🔹 Ambil data user login (observer/admin)
 // ============================================================
-$observer = isset($_SESSION['user']['username']) ? $_SESSION['user']['nama'] : 'Admin Tidak Dikenal';
+$observer = isset($_SESSION['user']['nama']) ? $_SESSION['user']['nama'] : 'Admin Tidak Dikenal';
 
 
 // ============================================================
 // 🔹 Ambil daftar field dinamis dari tabel apd_fields
 // ============================================================
 $fields_query = mysqli_query($conn, "SELECT field_name, display_label FROM apd_fields ORDER BY id ASC");
+if (!$fields_query) {
+    die("Query fields error: " . mysqli_error($conn));
+}
 $fields = [];
 while ($row = mysqli_fetch_assoc($fields_query)) {
     $fields[$row['field_name']] = $row['display_label'];
@@ -44,12 +47,18 @@ function format_bulan_tahun_indo($bulanData)
 // Ambil daftar tahun unik
 $tahun_list = mysqli_query($conn, "SELECT DISTINCT YEAR(STR_TO_DATE(CONCAT(bulan, '-01'), '%Y-%m-%d')) AS tahun FROM data_observasi ORDER BY tahun DESC");
 
+if (!$tahun_list) {
+    die("Query tahun error: " . mysqli_error($conn));
+}
+
 // Ambil daftar bulan unik (hanya bagian MM)
 $bulan_list = mysqli_query($conn, "SELECT DISTINCT RIGHT(bulan, 2) AS bulan FROM data_observasi ORDER BY bulan ASC");
 
 // Ambil daftar ruangan
 $ruangan_list = mysqli_query($conn, "SELECT nama AS ruangan FROM ruangan ORDER BY nama ASC");
-
+if (!$ruangan_list) {
+    die("Query ruangan error: " . mysqli_error($conn));
+}
 
 $filter_tahun = $_GET['tahun'] ?? 'semua';
 $filter_bulan = $_GET['bulan'] ?? 'semua';
@@ -68,7 +77,7 @@ if ($filter_ruangan != 'semua') {
 }
 
 // 🔸 Tambahan: Jika belum pilih bulan atau ruangan, hentikan query agar tidak tampil data
-$show_data = ($filter_tahun != '' && $filter_bulan != '' && $filter_ruangan != '');
+$show_data = true;
 
 
 // ============================================================
@@ -224,9 +233,11 @@ if ($show_data) {
         transition: all 0.3s ease;
         overflow-y: auto;
     }
+
     .sidebar.active+.content {
         margin-left: 0;
     }
+
     .topbar {
         height: 65px;
         background: #fff;
@@ -236,6 +247,7 @@ if ($show_data) {
         padding: 0 25px;
         border-bottom: 1px solid #dee2e6;
     }
+
     .topbar-left button {
         background: none;
         border: none;
@@ -243,6 +255,7 @@ if ($show_data) {
         color: #009879;
         cursor: pointer;
     }
+
     .greeting {
         font-weight: 500;
         color: #333;
@@ -437,9 +450,8 @@ if ($show_data) {
 
 
 
-
-
 <h2>📊 Laporan Kepatuhan APD Bulanan</h2>
+
 <!-- ===== FORM FILTER ===== -->
 <form method="GET" class="filter-form">
     <input type="hidden" name="page" value="laporan">
@@ -557,14 +569,18 @@ if (!$show_data): ?>
         }
     endforeach;
 
-
     $total_semua = $total_ya + $total_tidak + $total_tidak_dinilai;
     if ($total_semua > 0):
-        $total_persen = round(($total_num / $total_den) * 100, 2);
-        $persen_ya = round(($total_ya / $total_semua) * 100, 1);
-        $persen_tidak = round(($total_tidak / $total_semua) * 100, 1);
-        $persen_tdk = round(($total_tidak_dinilai / $total_semua) * 100, 1);
+        $total_persen = ($total_den > 0) ? round(($total_num / $total_den) * 100, 2) : 0;
+        // 🔥 TOTAL VALID (TANPA TIDAK DINILAI)
+        $total_valid = $total_ya + $total_tidak;
 
+        // 🔥 HITUNG PERSEN HARUS DARI TOTAL VALID
+        $persen_ya = ($total_valid > 0) ? round(($total_ya / $total_valid) * 100, 1) : 0;
+        $persen_tidak = ($total_valid > 0) ? round(($total_tidak / $total_valid) * 100, 1) : 0;
+
+        // (opsional kalau masih mau tampilkan)
+        $persen_tdk = ($total_semua > 0) ? round(($total_tidak_dinilai / $total_semua) * 100, 1) : 0;
 
     ?>
 
@@ -581,7 +597,6 @@ if (!$show_data): ?>
             </div>
         </div>
 
-
         <div class="stats-grid">
             <div class="stat-card bg-yellow">
                 🟩<h3><?= $total_ya ?></h3>
@@ -595,11 +610,7 @@ if (!$show_data): ?>
                 <small><?= $persen_tidak ?>%</small>
             </div>
 
-            <!-- <div class="stat-card bg-gray">
-        ⚪<h3><?= $total_tidak_dinilai ?></h3>
-        <p>Tidak Dinilai</p>
-        <small><?= $persen_tdk ?>%</small>
-    </div> -->
+
 
             <div class="stat-card bg-green">
                 ✅<h3><?= $total_persen ?>%</h3>
@@ -612,6 +623,8 @@ if (!$show_data): ?>
                     // $warna_status = ($status_kepatuhan == 'Tercapai') ? 'bg-green' : 'bg-red';
                     ?> -->
             <?php
+
+
             // 🔹 Status Kepatuhan berdasarkan standar 85%
             $status_kepatuhan = ($total_persen >= 85) ? 'Tercapai' : 'Tidak Tercapai';
             $warna_status = ($total_persen >= 85) ? 'bg-green' : 'bg-red';
@@ -622,8 +635,6 @@ if (!$show_data): ?>
                 <p>Status Kepatuhan</p>
                 <small>berdasarkan rata-rata <?= $total_persen ?>%</small>
             </div>
-
-
 
             <?php
             // 🧩 Logika agar nama ruangan tampil sesuai filter
@@ -641,8 +652,6 @@ if (!$show_data): ?>
                 🏥<h3><?= htmlspecialchars($nama_ruangan_tampil) ?></h3>
                 <p>Nama Ruangan</p>
             </div>
-
-
 
             <div class="stat-card bg-blue">
                 👩‍⚕️<h3><?= count($nama_dilaporkan) ?></h3>
@@ -725,7 +734,6 @@ if (!$show_data): ?>
                             </td>
                             <td><?= format_tanggal_indo($row['tanggal']) ?></td>
 
-
                         </tr>
                     <?php endforeach; ?>
                 </tbody>
@@ -749,13 +757,10 @@ if (!$show_data): ?>
             const warnaNum = '#1976D2';
             const warnaDen = '#9E9E9E';
 
-            // Hitung total global
-            const totalYa = Object.values(statData).reduce((a, b) => a + b['Ya'], 0);
-            const totalTidak = Object.values(statData).reduce((a, b) => a + b['Tidak'], 0);
-            const totalTdk = Object.values(statData).reduce((a, b) => a + b['Tidak Dinilai'], 0);
-
-            // 🔹 Hitung total TANPA "Tidak Dinilai"
-            const totalValid = totalYa + totalTidak;
+            // 🔥 AMBIL LANGSUNG DARI PHP (BIAR 100% SAMA DENGAN CARD)
+            const totalYa = <?= $total_ya ?>;
+            const totalTidak = <?= $total_tidak ?>;
+            const totalValid = <?= $total_ya + $total_tidak ?>;
 
             // === Pie Chart (FIX) ===
             new Chart(document.getElementById('chartPie'), {

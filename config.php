@@ -19,12 +19,19 @@ $base_url = $protocol . $hostName . $folder;
 //   hosting    → https://namadomainmu.com/
 
 // ======================================================
-// ⚙️ KONFIGURASI DATABASE
+// ⚙️ KONFIGURASI DATABASE/ UNTUK FUSH KE GITHUB
 // ======================================================
 $host = "localhost";
 $user = "admin";
 $pass = "rsvp@satu23";
 $db   = "sikaptan";
+
+
+// // CONFIG UJI DI LOCAL
+// $host = "localhost";
+// $user = "root";
+// $pass = "";
+// $db   = "sikaptan";
 
 $conn = mysqli_connect($host, $user, $pass, $db);
 
