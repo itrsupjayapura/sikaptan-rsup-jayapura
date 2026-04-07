@@ -29,6 +29,10 @@ $filter_tahun = $_GET['tahun'] ?? '';
 $filter_bulan = $_GET['bulan'] ?? '';
 $filter_ruangan = $_GET['ruangan'] ?? '';
 
+$filter_tahun_cuci = $_GET['tahun_cuci'] ?? '';
+$filter_bulan_cuci = $_GET['bulan_cuci'] ?? '';
+$filter_ruangan_cuci = $_GET['ruangan_cuci'] ?? '';
+
 $where = "1=1";
 
 if ($filter_tahun != '' && $filter_bulan != '') {
@@ -77,16 +81,16 @@ foreach ($rows as $row) {
     } elseif ($val == 'tidak') {
       $stat[$k]['Tidak']++;
 
-      
-/* ================= SINKRON TOTAL DENGAN CHART ================= */
-// reset ulang biar sama dengan chart
-$total_ya = 0;
-$total_tidak = 0;
 
-foreach ($stat as $item) {
-    $total_ya += $item['Ya'];
-    $total_tidak += $item['Tidak'];
-}
+      /* ================= SINKRON TOTAL DENGAN CHART ================= */
+      // reset ulang biar sama dengan chart
+      $total_ya = 0;
+      $total_tidak = 0;
+
+      foreach ($stat as $item) {
+        $total_ya += $item['Ya'];
+        $total_tidak += $item['Tidak'];
+      }
     } else {
       $stat[$k]['Tidak Dinilai']++;
       $total_tidak_dinilai++;
@@ -171,12 +175,67 @@ foreach ($fields_cuci as $k => $v) {
 
 /* ================= AMBIL DATA ================= */
 
-$query_cuci_detail = mysqli_query($conn, "SELECT * FROM observasi_cuci_tangan");
+$where_cuci = "1=1";
+
+$nama_ruangan_cuci = $filter_ruangan_cuci != ''
+  ? $filter_ruangan_cuci
+  : 'Semua Ruangan';
+
+// filter bulan + tahun
+if ($filter_tahun_cuci != '' && $filter_bulan_cuci != '') {
+  $periode_cuci = $filter_tahun_cuci . '-' . $filter_bulan_cuci;
+  $where_cuci .= " AND bulan='$periode_cuci'";
+}
+
+// filter ruangan
+if ($filter_ruangan_cuci != '') {
+  $where_cuci .= " AND ruangan='$filter_ruangan_cuci'";
+}
+
+// query pakai filter
+$query_cuci_detail = mysqli_query($conn, "
+SELECT * FROM observasi_cuci_tangan
+WHERE $where_cuci
+");
+
+// ================= TAMBAHAN =================
+$nama_rekan_cuci = [];
+$ruangan_cuci_terpakai = [];
+
+/* ================= JUMLAH REKAN CUCI ================= */
+$jumlah_rekan_cuci = 0;
+
+$query_rekan_cuci = mysqli_query($conn, "
+SELECT COUNT(*) as total 
+FROM observasi_cuci_tangan
+WHERE $where_cuci
+");
+
+$data_rekan = mysqli_fetch_assoc($query_rekan_cuci);
+$jumlah_rekan_cuci = $data_rekan['total'] ?? 0;
 
 $total_num_cuci = 0;
 $total_den_cuci = 0;
 
+$total_ya_cuci = 0;
+$total_tidak_cuci = 0;
+$total_tidak_dinilai_cuci = 0;
+
 while ($row = mysqli_fetch_assoc($query_cuci_detail)) {
+
+  // ================= TAMBAHAN =================
+
+  // 🔥 HITUNG NAMA REKAN (UNIK)
+  $nama = trim($row['nama_rekan_dilaporkan'] ?? '');
+  if ($nama !== '') {
+    $nama_rekan_cuci[$nama] = true;
+  }
+
+  // 🔥 SIMPAN RUANGAN YANG TERPAKAI
+  if (!empty($row['ruangan'])) {
+    $ruangan_cuci_terpakai[$row['ruangan']] = true;
+  }
+
 
   // 🔹 ambil numerator & denominator langsung dari loop
   $total_num_cuci += $row['numerator'] ?? 0;
@@ -188,18 +247,33 @@ while ($row = mysqli_fetch_assoc($query_cuci_detail)) {
 
     if ($val === 'ya') {
       $stat_cuci[$k]['Ya']++;
+      $total_ya_cuci++;
     } elseif ($val === 'tidak') {
       $stat_cuci[$k]['Tidak']++;
+      $total_tidak_cuci++;
     } else {
       $stat_cuci[$k]['Tidak Dinilai']++;
+      $total_tidak_dinilai_cuci++;
     }
   }
 }
 
+
+
+$total_valid_cuci = $total_ya_cuci + $total_tidak_cuci;
+
+$persen_ya_cuci = $total_valid_cuci > 0
+  ? round(($total_ya_cuci / $total_valid_cuci) * 100, 1)
+  : 0;
+
+$persen_tidak_cuci = $total_valid_cuci > 0
+  ? round(($total_tidak_cuci / $total_valid_cuci) * 100, 1)
+  : 0;
+
 /* ================= TOTAL CUCI (FINAL SINKRON) ================= */
 
-$total_ya_cuci = $total_num_cuci;
-$total_tidak_cuci = $total_den_cuci - $total_num_cuci;
+// $total_ya_cuci = $total_num_cuci;
+// $total_tidak_cuci = $total_den_cuci - $total_num_cuci;
 
 /* ================= PERSENTASE (SAMA DENGAN CHART) ================= */
 
@@ -236,9 +310,15 @@ if ($rata_cuci >= 85) {
 $handwash = 0;
 $handrub = 0;
 
+// $jenis_query = mysqli_query($conn, "
+// SELECT cuci_tangan_menggunakan 
+// FROM observasi_cuci_tangan
+// ");
+
 $jenis_query = mysqli_query($conn, "
 SELECT cuci_tangan_menggunakan 
 FROM observasi_cuci_tangan
+WHERE $where_cuci
 ");
 
 while ($j = mysqli_fetch_assoc($jenis_query)) {
@@ -252,6 +332,23 @@ while ($j = mysqli_fetch_assoc($jenis_query)) {
   }
 }
 
+
+
+// ================= TAMBAHAN =================
+
+// 🔥 TOTAL REKAN (UNIK)
+$jumlah_rekan_cuci = count($nama_rekan_cuci);
+
+// 🔥 NAMA RUANGAN (SAMA SEPERTI LAPORAN)
+if ($filter_ruangan_cuci == '') {
+  if (!empty($ruangan_cuci_terpakai)) {
+    $nama_ruangan_cuci = 'Semua Ruangan';
+  } else {
+    $nama_ruangan_cuci = '-';
+  }
+} else {
+  $nama_ruangan_cuci = $filter_ruangan_cuci;
+}
 
 
 
@@ -270,7 +367,6 @@ while ($j = mysqli_fetch_assoc($jenis_query)) {
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 
   <style>
-
     /* ================= GLOBAL ================= */
     * {
       margin: 0;
@@ -732,6 +828,7 @@ box-shadow:0 25px 45px rgba(0,0,0,.18);
     .bg-yellow {
       background: linear-gradient(145deg, #fff6d8, #ffefc4);
     }
+
     .bg-yellow i {
       color: #f59e0b;
     }
@@ -1102,10 +1199,12 @@ box-shadow:0 25px 45px rgba(0,0,0,.18);
       .page-title h2 {
         font-size: 18px;
       }
+
       .tab button {
         font-size: 11px;
         padding: 7px 10px;
       }
+
       .stat-card {
         padding: 18px;
       }
@@ -1234,7 +1333,7 @@ box-shadow:0 25px 45px rgba(0,0,0,.18);
 
 
 
-  
+
   <!-- ================= APD TAB ================= -->
   <div id="apd" class="tabcontent">
     <h2>
@@ -1243,17 +1342,20 @@ box-shadow:0 25px 45px rgba(0,0,0,.18);
     </h2>
 
     <form method="GET" class="filter-form">
+      <input type="hidden" name="tab" value="apd">
       <div class="filter-group">
         <label> <i class="fa-solid fa-calendar"></i>Bulan</label>
         <select name="bulan" class="filter-select">
-          <option value="">Pilih</option>
+          <option value="">Semua Bulan</option>
 
           <?php
           $nama_bulan = ['01' => 'Jan', '02' => 'Feb', '03' => 'Mar', '04' => 'Apr', '05' => 'Mei', '06' => 'Jun', '07' => 'Jul', '08' => 'Agu', '09' => 'Sep', '10' => 'Okt', '11' => 'Nov', '12' => 'Des'];
           while ($b = mysqli_fetch_assoc($bulan_list)) {
           ?>
 
-            <option value="<?= $b['bulan'] ?>"><?= $nama_bulan[$b['bulan']] ?></option>
+            <option value="<?= $b['bulan'] ?>" <?= ($filter_bulan == $b['bulan']) ? 'selected' : '' ?>>
+              <?= $nama_bulan[$b['bulan']] ?>
+            </option>
           <?php } ?>
         </select>
       </div>
@@ -1261,9 +1363,11 @@ box-shadow:0 25px 45px rgba(0,0,0,.18);
       <div class="filter-group">
         <label> <i class="fa-solid fa-calendar-days"></i>Tahun</label>
         <select name="tahun" class="filter-select">
-          <option value="">Pilih</option>
+          <option value="">Semua Tahun</option>
           <?php while ($t = mysqli_fetch_assoc($tahun_list)) { ?>
-            <option value="<?= $t['tahun'] ?>"><?= $t['tahun'] ?></option>
+            <option value="<?= $t['tahun'] ?>" <?= ($filter_tahun == $t['tahun']) ? 'selected' : '' ?>>
+              <?= $t['tahun'] ?>
+            </option>
           <?php } ?>
         </select>
       </div>
@@ -1271,9 +1375,11 @@ box-shadow:0 25px 45px rgba(0,0,0,.18);
       <div class="filter-group">
         <label> <i class="fa-solid fa-door-open"></i> Ruangan</label>
         <select name="ruangan" class="filter-select">
-          <option value="">Pilih</option>
+          <option value="">Semua Rangan</option>
           <?php while ($r = mysqli_fetch_assoc($ruangan_list)) { ?>
-            <option value="<?= $r['ruangan'] ?>"><?= $r['ruangan'] ?></option>
+            <option value="<?= $r['ruangan'] ?>" <?= ($filter_ruangan == $r['ruangan']) ? 'selected' : '' ?>>
+              <?= $r['ruangan'] ?>
+            </option>
           <?php } ?>
         </select>
       </div>
@@ -1357,34 +1463,14 @@ box-shadow:0 25px 45px rgba(0,0,0,.18);
       </div>
 
       <div class="chart-box">
+        
         <h3>Perbandingan Numerator VS Denumerator </h3>
         <canvas id="chartNDApd"></canvas>
-        <p>Total Numerator : <?= $total_num_cuci ?></p>
-        <p>Total Denominator : <?= $total_den_cuci ?></p>
+        <p>Total Numerator : <?= $total_num ?></p>
+        <p>Total Denominator : <?= $total_den ?></p>
       </div>
     </div>
   </div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1421,9 +1507,15 @@ ORDER BY nama ASC
     ?>
 
     <form method="GET" class="filter-form">
+
+      <!-- 🔥 SIMPAN TAB -->
+      <input type="hidden" name="tab" value="cuci">
+
+      <!-- ================= BULAN ================= -->
       <div class="filter-group">
-        <label><i class="fa-solid fa-calendar"></i>Bulan</label>
-        <select name="bulan" class="filter-select">
+        <label><i class="fa-solid fa-calendar"></i> Bulan</label>
+
+        <select name="bulan_cuci" class="filter-select">
           <option value="">Semua Bulan</option>
 
           <?php
@@ -1444,37 +1536,62 @@ ORDER BY nama ASC
 
           while ($b = mysqli_fetch_assoc($bulan_list2)) {
           ?>
-            <option value="<?= $b['bulan'] ?>"><?= $nama_bulan[$b['bulan']] ?></option>
+            <option value="<?= $b['bulan'] ?>"
+              <?= ($filter_bulan_cuci == $b['bulan']) ? 'selected' : '' ?>>
+
+              <?= $nama_bulan[$b['bulan']] ?>
+
+            </option>
           <?php } ?>
         </select>
       </div>
 
 
+      <!-- ================= TAHUN ================= -->
       <div class="filter-group">
-        <label><i class="fa-solid fa-calendar-days"></i>Tahun</label>
-        <select name="tahun" class="filter-select">
+        <label><i class="fa-solid fa-calendar-days"></i> Tahun</label>
+
+        <select name="tahun_cuci" class="filter-select">
           <option value="">Semua Tahun</option>
+
           <?php while ($t = mysqli_fetch_assoc($tahun_list2)) { ?>
-            <option value="<?= $t['tahun'] ?>"><?= $t['tahun'] ?></option>
+            <option value="<?= $t['tahun'] ?>"
+              <?= ($filter_tahun_cuci == $t['tahun']) ? 'selected' : '' ?>>
+
+              <?= $t['tahun'] ?>
+
+            </option>
           <?php } ?>
         </select>
       </div>
 
+
+      <!-- ================= RUANGAN ================= -->
       <div class="filter-group">
-        <label><i class="fa-solid fa-door-open"></i>Ruangan</label>
-        <select name="ruangan" class="filter-select">
+        <label><i class="fa-solid fa-door-open"></i> Ruangan</label>
+
+        <select name="ruangan_cuci" class="filter-select">
           <option value="">Semua Ruangan</option>
+
           <?php while ($r = mysqli_fetch_assoc($ruangan_list2)) { ?>
-            <option value="<?= $r['ruangan'] ?>"><?= $r['ruangan'] ?></option>
+            <option value="<?= $r['ruangan'] ?>"
+              <?= ($filter_ruangan_cuci == $r['ruangan']) ? 'selected' : '' ?>>
+
+              <?= $r['ruangan'] ?>
+
+            </option>
           <?php } ?>
         </select>
       </div>
 
+
+      <!-- ================= BUTTON ================= -->
       <div style="display:flex;align-items:flex-end">
         <button class="btn-primary">
           <i class="fa-solid fa-filter"></i> Tampilkan
         </button>
       </div>
+
     </form>
 
 
@@ -1512,13 +1629,13 @@ ORDER BY nama ASC
 
       <div class="stat-card bg-blue">
         <i class="fa-solid fa-door-open"></i>
-        <h3>Semua Ruangan</h3>
+        <h3><?= $nama_ruangan_cuci ?></h3>
         <p>Nama Ruangan</p>
       </div>
 
       <div class="stat-card bg-blue">
         <i class="fa-solid fa-user-pen"></i>
-        <h3><?= count($rows) ?></h3>
+        <h3><?= $jumlah_rekan_cuci ?></h3>
         <p>Nama Rekan Dilaporkan</p>
       </div>
     </div>
@@ -1581,7 +1698,6 @@ ORDER BY nama ASC
 
 
   <script>
-
     /* ================= TAB SYSTEM ================= */
     function openTab(evt, name) {
       let i, tabcontent, tablinks;
@@ -1598,8 +1714,19 @@ ORDER BY nama ASC
     }
 
     /* buka tab pertama otomatis */
+    // document.addEventListener("DOMContentLoaded", function() {
+    //   document.getElementById("defaultOpen").click();
+    // });
+
     document.addEventListener("DOMContentLoaded", function() {
-      document.getElementById("defaultOpen").click();
+      const urlParams = new URLSearchParams(window.location.search);
+      const tab = urlParams.get('tab');
+
+      if (tab === 'cuci') {
+        document.querySelector("button[onclick*='cuci']").click();
+      } else {
+        document.getElementById("defaultOpen").click();
+      }
     });
 
 
@@ -1644,8 +1771,7 @@ ORDER BY nama ASC
         type: 'bar',
         data: {
           labels: labels,
-          datasets: [
-            {
+          datasets: [{
               label: 'Ya',
               data: labels.map(k => statData[k]['Ya']),
               backgroundColor: '#2E7D32'
@@ -1855,4 +1981,5 @@ ORDER BY nama ASC
   </script>
 
 </body>
+
 </html>
