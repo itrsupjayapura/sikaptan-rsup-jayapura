@@ -61,6 +61,10 @@ $rows = [];
 while ($r = mysqli_fetch_assoc($data)) {
   $rows[] = $r;
 }
+
+$nama_rekan_apd = [];
+
+
 $total_num = 0;
 $total_den = 0;
 $stat = [];
@@ -71,6 +75,10 @@ $total_ya = 0;
 $total_tidak = 0;
 $total_tidak_dinilai = 0;
 foreach ($rows as $row) {
+  $nama = trim($row['nama_rekan_dilaporkan'] ?? '');
+  if ($nama !== '') {
+    $nama_rekan_apd[$nama] = true;
+  }
   $total_num += $row['numerator'];
   $total_den += $row['denumerator'];
   foreach ($fields as $k => $v) {
@@ -238,8 +246,17 @@ while ($row = mysqli_fetch_assoc($query_cuci_detail)) {
 
 
   // 🔹 ambil numerator & denominator langsung dari loop
-  $total_num_cuci += $row['numerator'] ?? 0;
-  $total_den_cuci += $row['denumerator'] ?? 0;
+
+  $total_num_cuci = 0;
+  $total_tidak_cuci = 0;
+
+  foreach ($stat_cuci as $item) {
+    $total_num_cuci += $item['Ya'];
+    $total_tidak_cuci += $item['Tidak'];
+  }
+
+  // denominator = semua (ya + tidak + tidak dinilai)
+  $total_den_cuci = $total_num_cuci + $total_tidak_cuci + $total_tidak_dinilai_cuci;
 
   foreach ($fields_cuci as $k => $v) {
 
@@ -257,6 +274,21 @@ while ($row = mysqli_fetch_assoc($query_cuci_detail)) {
     }
   }
 }
+
+/* ================= FIX TOTAL CUCI (100% SINKRON) ================= */
+
+// reset ulang
+$total_num_cuci = 0;
+$total_tidak_cuci = 0;
+
+// ambil dari stat (SAMA DENGAN CHART)
+foreach ($stat_cuci as $item) {
+  $total_num_cuci += $item['Ya'];
+  $total_tidak_cuci += $item['Tidak'];
+}
+
+// total semua
+$total_den_cuci = $total_num_cuci + $total_tidak_cuci + $total_tidak_dinilai_cuci;
 
 
 
@@ -1444,7 +1476,7 @@ box-shadow:0 25px 45px rgba(0,0,0,.18);
 
       <div class="stat-card bg-blue">
         <i class="fa-solid fa-user-pen"></i>
-        <h3><?= count($rows) ?></h3>
+        <h3><?= count($nama_rekan_apd) ?></h3>
         <p>Nama Rekan Dilaporkan</p>
       </div>
     </div>
@@ -1463,7 +1495,7 @@ box-shadow:0 25px 45px rgba(0,0,0,.18);
       </div>
 
       <div class="chart-box">
-        
+
         <h3>Perbandingan Numerator VS Denumerator </h3>
         <canvas id="chartNDApd"></canvas>
         <p>Total Numerator : <?= $total_num ?></p>
@@ -1471,6 +1503,27 @@ box-shadow:0 25px 45px rgba(0,0,0,.18);
       </div>
     </div>
   </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
