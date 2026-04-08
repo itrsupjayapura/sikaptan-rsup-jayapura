@@ -88,22 +88,20 @@ foreach ($rows as $row) {
       $total_ya++;
     } elseif ($val == 'tidak') {
       $stat[$k]['Tidak']++;
-
-
-      /* ================= SINKRON TOTAL DENGAN CHART ================= */
-      // reset ulang biar sama dengan chart
-      $total_ya = 0;
-      $total_tidak = 0;
-
-      foreach ($stat as $item) {
-        $total_ya += $item['Ya'];
-        $total_tidak += $item['Tidak'];
-      }
     } else {
       $stat[$k]['Tidak Dinilai']++;
       $total_tidak_dinilai++;
     }
   }
+}
+
+// ================= FIX TOTAL APD =================
+$total_ya = 0;
+$total_tidak = 0;
+
+foreach ($stat as $item) {
+  $total_ya += $item['Ya'];
+  $total_tidak += $item['Tidak'];
 }
 
 /* ================= HITUNG PERSENTASE (FIX SINKRON CHART) ================= */
@@ -128,11 +126,12 @@ $persen_tdk = $total_semua > 0
   ? round(($total_tidak_dinilai / $total_semua) * 100, 1)
   : 0;
 
-/* ================= RATA-RATA KEPATUHAN ================= */
-$total_persen = 0;
-if ($total_semua > 0) {
-  $total_persen = round(($total_ya / $total_semua) * 100, 2);
-}
+// ================= RATA-RATA KEPATUHAN =================
+$total_valid = $total_ya + $total_tidak;
+
+$total_persen = ($total_valid > 0)
+  ? round(($total_ya / $total_valid) * 100, 2)
+  : 0;
 
 /* ================= STATUS KEPATUHAN ================= */
 if ($total_persen >= 85) {
@@ -162,7 +161,7 @@ $cuci = mysqli_fetch_assoc($cuci_query);
 $total_num_cuci = $cuci['total_num'] ?? 0;
 $total_den_cuci = $cuci['total_den'] ?? 0;
 $rata_cuci = $total_den_cuci > 0
-  ? round(($total_num_cuci / $total_den_cuci) * 100, 2)
+  ? ($total_num_cuci / $total_den_cuci) * 100
   : 0;
 
 /* ================= STAT CUCI TANGAN ================= */
@@ -247,16 +246,9 @@ while ($row = mysqli_fetch_assoc($query_cuci_detail)) {
 
   // 🔹 ambil numerator & denominator langsung dari loop
 
-  $total_num_cuci = 0;
-  $total_tidak_cuci = 0;
+  $total_num_cuci += $row['numerator'];
+  $total_den_cuci += $row['denumerator'];
 
-  foreach ($stat_cuci as $item) {
-    $total_num_cuci += $item['Ya'];
-    $total_tidak_cuci += $item['Tidak'];
-  }
-
-  // denominator = semua (ya + tidak + tidak dinilai)
-  $total_den_cuci = $total_num_cuci + $total_tidak_cuci + $total_tidak_dinilai_cuci;
 
   foreach ($fields_cuci as $k => $v) {
 
@@ -275,21 +267,16 @@ while ($row = mysqli_fetch_assoc($query_cuci_detail)) {
   }
 }
 
-/* ================= FIX TOTAL CUCI (100% SINKRON) ================= */
 
-// reset ulang
-$total_num_cuci = 0;
+/* ================= FIX TOTAL CUCI (SINKRON) ================= */
+
+$total_ya_cuci = 0;
 $total_tidak_cuci = 0;
 
-// ambil dari stat (SAMA DENGAN CHART)
 foreach ($stat_cuci as $item) {
-  $total_num_cuci += $item['Ya'];
+  $total_ya_cuci += $item['Ya'];
   $total_tidak_cuci += $item['Tidak'];
 }
-
-// total semua
-$total_den_cuci = $total_num_cuci + $total_tidak_cuci + $total_tidak_dinilai_cuci;
-
 
 
 $total_valid_cuci = $total_ya_cuci + $total_tidak_cuci;
@@ -302,10 +289,6 @@ $persen_tidak_cuci = $total_valid_cuci > 0
   ? round(($total_tidak_cuci / $total_valid_cuci) * 100, 1)
   : 0;
 
-/* ================= TOTAL CUCI (FINAL SINKRON) ================= */
-
-// $total_ya_cuci = $total_num_cuci;
-// $total_tidak_cuci = $total_den_cuci - $total_num_cuci;
 
 /* ================= PERSENTASE (SAMA DENGAN CHART) ================= */
 
@@ -319,11 +302,15 @@ $persen_tidak_cuci = $total_valid_cuci > 0
   ? round(($total_tidak_cuci / $total_valid_cuci) * 100, 1)
   : 0;
 
-/* ================= RATA-RATA ================= */
+/* ================= RATA-RATA CUCI TANGAN (BENAR) ================= */
+
+$total_valid_cuci = $total_ya_cuci + $total_tidak_cuci;
 
 $rata_cuci = ($total_den_cuci > 0)
-  ? round(($total_num_cuci / $total_den_cuci) * 100, 2)
+  ? ($total_num_cuci / $total_den_cuci) * 100
   : 0;
+
+
 
 /* ================= STATUS ================= */
 
@@ -337,15 +324,12 @@ if ($rata_cuci >= 85) {
   $icon_status_cuci = "fa-times-circle";
 }
 
+
 /* ================= HANDWASH vs HANDRUB ================= */
 
 $handwash = 0;
 $handrub = 0;
 
-// $jenis_query = mysqli_query($conn, "
-// SELECT cuci_tangan_menggunakan 
-// FROM observasi_cuci_tangan
-// ");
 
 $jenis_query = mysqli_query($conn, "
 SELECT cuci_tangan_menggunakan 
@@ -365,7 +349,6 @@ while ($j = mysqli_fetch_assoc($jenis_query)) {
 }
 
 
-
 // ================= TAMBAHAN =================
 
 // 🔥 TOTAL REKAN (UNIK)
@@ -382,6 +365,153 @@ if ($filter_ruangan_cuci == '') {
   $nama_ruangan_cuci = $filter_ruangan_cuci;
 }
 
+
+
+
+
+
+
+/* ================= TOTAL FIX (SAMA PERSIS CHART) ================= */
+
+// 🔹 hanya valid data
+$total_valid_cuci = $total_ya_cuci + $total_tidak_cuci;
+
+// 🔹 persen (harus sama chart)
+$persen_ya_cuci = $total_valid_cuci > 0
+  ? round(($total_ya_cuci / $total_valid_cuci) * 100, 1)
+  : 0;
+
+$persen_tidak_cuci = $total_valid_cuci > 0
+  ? round(($total_tidak_cuci / $total_valid_cuci) * 100, 1)
+  : 0;
+
+
+
+/* ================= STATUS ================= */
+
+if ($rata_cuci >= 85) {
+  $status_kepatuhan_cuci = "Tercapai";
+  $warna_status_cuci = "bg-green";
+  $icon_status_cuci = "fa-check-circle";
+} else {
+  $status_kepatuhan_cuci = "Tidak Tercapai";
+  $warna_status_cuci = "bg-red";
+  $icon_status_cuci = "fa-times-circle";
+}
+
+/* ================= TAMBAHAN ================= */
+
+// jumlah rekan unik
+$jumlah_rekan_cuci = count($nama_rekan_cuci);
+
+// nama ruangan
+if ($filter_ruangan_cuci == '') {
+  $nama_ruangan_cuci = !empty($ruangan_cuci_terpakai)
+    ? 'Semua Ruangan'
+    : '-';
+} else {
+  $nama_ruangan_cuci = $filter_ruangan_cuci;
+}
+
+
+
+
+/* ================= AMBIL DATA CUCI ================= */
+
+$query_cuci_detail = mysqli_query($conn, "
+SELECT * FROM observasi_cuci_tangan
+WHERE $where_cuci
+");
+
+$nama_rekan_cuci = [];
+$ruangan_cuci_terpakai = [];
+
+$total_ya_cuci = 0;
+$total_tidak_cuci = 0;
+$total_tidak_dinilai_cuci = 0;
+
+$total_num_cuci = 0;
+$total_den_cuci = 0;
+
+while ($row = mysqli_fetch_assoc($query_cuci_detail)) {
+
+  // 🔥 nama rekan unik
+  $nama = trim($row['nama_rekan_dilaporkan'] ?? '');
+  if ($nama !== '') {
+    $nama_rekan_cuci[$nama] = true;
+  }
+
+  // 🔥 ruangan terpakai
+  if (!empty($row['ruangan'])) {
+    $ruangan_cuci_terpakai[$row['ruangan']] = true;
+  }
+
+  foreach ($fields_cuci as $k => $v) {
+
+    $val = strtolower(trim($row[$k] ?? ''));
+
+    if ($val === 'ya') {
+      $stat_cuci[$k]['Ya']++;
+      $total_ya_cuci++;
+    } elseif ($val === 'tidak') {
+      $stat_cuci[$k]['Tidak']++;
+      $total_tidak_cuci++;
+    } else {
+      $stat_cuci[$k]['Tidak Dinilai']++;
+      $total_tidak_dinilai_cuci++;
+    }
+  }
+}
+
+/* ================= TOTAL FIX (SAMA PERSIS CHART) ================= */
+
+// 🔹 hanya valid data
+$total_valid_cuci = $total_ya_cuci + $total_tidak_cuci;
+
+// 🔹 persen (harus sama chart)
+$persen_ya_cuci = $total_valid_cuci > 0
+  ? round(($total_ya_cuci / $total_valid_cuci) * 100, 1)
+  : 0;
+
+$persen_tidak_cuci = $total_valid_cuci > 0
+  ? round(($total_tidak_cuci / $total_valid_cuci) * 100, 1)
+  : 0;
+
+// 🔹 numerator & denominator (SAMA LOGIKA CHART)
+$total_num_cuci = $total_ya_cuci;
+$total_den_cuci = $total_valid_cuci;
+
+/* ================= RATA-RATA ================= */
+
+$rata_cuci = $total_valid_cuci > 0
+  ? round(($total_ya_cuci / $total_valid_cuci) * 100, 2)
+  : 0;
+
+/* ================= STATUS ================= */
+
+if ($rata_cuci >= 85) {
+  $status_kepatuhan_cuci = "Tercapai";
+  $warna_status_cuci = "bg-green";
+  $icon_status_cuci = "fa-check-circle";
+} else {
+  $status_kepatuhan_cuci = "Tidak Tercapai";
+  $warna_status_cuci = "bg-red";
+  $icon_status_cuci = "fa-times-circle";
+}
+
+/* ================= TAMBAHAN ================= */
+
+// jumlah rekan unik
+$jumlah_rekan_cuci = count($nama_rekan_cuci);
+
+// nama ruangan
+if ($filter_ruangan_cuci == '') {
+  $nama_ruangan_cuci = !empty($ruangan_cuci_terpakai)
+    ? 'Semua Ruangan'
+    : '-';
+} else {
+  $nama_ruangan_cuci = $filter_ruangan_cuci;
+}
 
 
 ?>
@@ -1668,7 +1798,7 @@ ORDER BY nama ASC
         <div class="icon-box">
           <i class="fa-solid fa-chart-simple"></i>
         </div>
-        <h3><?= $rata_cuci ?>%</h3>
+        <h3><?= number_format($rata_cuci, 2) ?>%</h3>
         <p>Rata-rata Kepatuhan</p>
       </div>
 
